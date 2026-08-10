@@ -1,0 +1,65 @@
+name: Publish to npm
+
+on:
+  # Publishes when you create a GitHub Release. Draft a release with a tag
+  # like v0.1.0 and this ships whatever that tag points at.
+  release:
+    types: [published]
+  # Manual escape hatch, e.g. to re-run a publish that failed after the
+  # release was already created.
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      # Required for npm provenance, which cryptographically links the
+      # published tarball back to this repo and commit.
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          registry-url: https://registry.npmjs.org
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Verify the tag matches package.json
+        # Publishing a tag that disagrees with the manifest silently ships the
+        # wrong version, and npm versions cannot be reused once taken.
+        if: github.event_name == 'release'
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          manifest=$(node -p "require('./package.json').version")
+          echo "tag=$tag manifest=$manifest"
+          if [ "$tag" != "$manifest" ]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package.json version $manifest"
+            exit 1
+          fi
+
+      - name: Check this version is not already published
+        # npm rejects a duplicate version anyway; failing here makes the reason
+        # obvious instead of burying it in npm's error output.
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if npm view "$name@$version" version >/dev/null 2>&1; then
+            echo "::error::$name@$version is already on npm — bump the version first"
+            exit 1
+          fi
+          echo "$name@$version is free to publish"
+
+      - name: Publish
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

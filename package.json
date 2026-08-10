@@ -16,8 +16,17 @@
   "engines": {
     "node": ">=18.17"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mishalibrar/rn-arch-check.git"
+  },
+  "homepage": "https://github.com/mishalibrar/rn-arch-check#readme",
+  "bugs": {
+    "url": "https://github.com/mishalibrar/rn-arch-check/issues"
+  },
   "scripts": {
-    "test": "node --test"
+    "test": "node --test test/*.test.js",
+    "prepublishOnly": "node --test test/*.test.js"
   },
   "keywords": [
     "react-native",
@@ -29,6 +38,7 @@
     "cli",
     "dependencies"
   ],
+  "author": "mishalibrar <mishalibrar12@gmail.com>",
   "license": "MIT",
   "dependencies": {
     "chalk": "^5.3.0",

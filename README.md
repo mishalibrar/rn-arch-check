@@ -1,5 +1,8 @@
 # rn-arch-check
 
+[![CI](https://github.com/mishalibrar/rn-arch-check/actions/workflows/ci.yml/badge.svg)](https://github.com/mishalibrar/rn-arch-check/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/rn-arch-check)](https://www.npmjs.com/package/rn-arch-check)
+
 Scan a React Native project's dependencies and report which ones are compatible
 with the New Architecture (Fabric, TurboModules, JSI), using
 [React Native Directory](https://reactnative.directory) as the data source.
