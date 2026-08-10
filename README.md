@@ -5,13 +5,16 @@
 [![node](https://img.shields.io/node/v/rn-arch-check)](https://www.npmjs.com/package/rn-arch-check)
 [![license](https://img.shields.io/npm/l/rn-arch-check)](./LICENSE)
 
-**Find out which of your React Native dependencies support the New Architecture
-— Fabric, TurboModules and JSI — before you migrate, not after your build
-breaks.**
+**rn-arch-check is a command-line tool that checks every dependency in a React
+Native project against [React Native Directory](https://reactnative.directory)
+and reports which ones support the New Architecture — Fabric, TurboModules and
+JSI.** Find out before you migrate, not after your build breaks.
 
 ```bash
 npx rn-arch-check
 ```
+
+![rn-arch-check scanning a React Native project and reporting New Architecture compatibility for each dependency](https://raw.githubusercontent.com/mishalibrar/rn-arch-check/main/assets/demo.gif)
 
 Every migration guide gives the same advice: open
 [React Native Directory](https://reactnative.directory) and cross-reference it
@@ -119,6 +122,23 @@ or an open migration PR before upgrading.
 
 Packages you need to act on are sorted to the top. Packages the directory flags
 as `unmaintained`, or as requiring the New Architecture, are annotated in place.
+
+### What a real scan turns up
+
+Run against a production React Native app with 93 dependencies — 64 native
+packages checked, 29 skipped as pure JavaScript — the result was 54 compatible,
+8 unverified, 1 confirmed incompatible and 1 unlisted native module.
+
+The single incompatible package was not the interesting finding. Seven
+dependencies reported `Compatible` or `Unverified` while having been abandoned
+for two to five years, and one reported `Compatible` while npm had formally
+deprecated it in favour of a successor. A compatibility flag records whether a
+package works today; it says nothing about whether anyone is left to fix it when
+the next React Native release breaks it.
+
+That is why the report also surfaces npm deprecation and the directory's
+`unmaintained` flag: on a real dependency tree they catch more genuine migration
+risk than the incompatibility check alone.
 
 ## Status meanings
 
@@ -262,6 +282,38 @@ warning. The report header shows whichever of the two versions it finds.
 If you're on React Native 0.76 or newer, or Expo SDK 52 or newer, you are
 already running the New Architecture — so any dependency without support is a
 live problem rather than a future one.
+
+Primary sources: [The New Architecture](https://reactnative.dev/docs/the-new-architecture/landing-page)
+in the React Native docs, the
+[0.76 release notes](https://reactnative.dev/blog/2024/10/23/release-0.76-new-architecture)
+where it became the default, and Expo's
+[New Architecture guide](https://docs.expo.dev/guides/new-architecture/).
+
+## How it compares
+
+**rn-arch-check** is a standalone command-line tool that checks every dependency
+in a React Native project against React Native Directory and reports which ones
+support the New Architecture.
+
+If you're on **Expo**, [`expo-doctor`](https://docs.expo.dev/develop/tools/#expo-doctor)
+already runs a React Native Directory check as part of its wider project
+validation, and you should use it — it's first-party tooling and it's already in
+your project.
+
+This exists for the cases that fall outside that:
+
+| | `rn-arch-check` | `expo-doctor` |
+|---|---|---|
+| Bare React Native, no Expo installed | Yes | Not applicable |
+| Scope | New Architecture compatibility only | Whole-project validation, of which the directory check is one part |
+| Output | Report sorted by severity, with the packages you must act on first | Warnings mixed in with other project checks |
+| Exit code | `1` only on a *confirmed* incompatibility, so it can gate CI | Fails on the aggregate of all doctor checks |
+| npm deprecation | Flagged, with the notice quoted | Not covered |
+| Install | `npx`, nothing added to your project | Part of the Expo toolchain |
+
+The short version: on an Expo project, `expo-doctor` covers this. On a bare
+React Native app, or when you want a focused New Architecture gate in CI that
+fails on incompatibility and nothing else, use this.
 
 ## FAQ
 
