@@ -1,6 +1,6 @@
 {
   "name": "rn-arch-check",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Check which React Native dependencies support the New Architecture (Fabric, TurboModules, JSI) before you migrate. Zero-config CLI, CI-ready.",
   "type": "module",
   "bin": {
