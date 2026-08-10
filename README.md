@@ -42,7 +42,7 @@ rn-arch-check --concurrency 3
 
 | Flag | Default | Meaning |
 |---|---|---|
-| `-p, --path <path>` | current directory | Project root to scan |
+| `-p, --path <path>` | current directory | Project root to scan, or a path to its `package.json` |
 | `-c, --concurrency <number>` | `5` | Parallel directory lookups |
 | `--json` | off | Raw JSON output instead of the formatted report |
 | `-v, --version` | | Print the version |
@@ -93,7 +93,7 @@ Architecture — it won't work if you stay on the old one.
 |---|---|
 | `0` | No confirmed incompatibilities |
 | `1` | At least one dependency is confirmed incompatible |
-| `2` | The scan could not run (bad path, malformed package.json, bad flag) |
+| `2` | The scan could not run, or every lookup failed |
 
 Because a confirmed incompatibility exits `1`, this gates CI as-is:
 
@@ -101,8 +101,10 @@ Because a confirmed incompatibility exits `1`, this gates CI as-is:
 - run: npx rn-arch-check
 ```
 
-Note that `unverified` and `unknown` do **not** fail the build — only a
-confirmed incompatibility does.
+Note that `unverified` does **not** fail the build — only a confirmed
+incompatibility does. A scattering of failed lookups doesn't either, but a run
+where *every* lookup failed exits `2` rather than `0`, so an offline or blocked
+CI runner can't report a clean pass having verified nothing.
 
 ## JSON output
 
@@ -157,6 +159,23 @@ most packages cost one request and ambiguous ones cost two.
 
 A lookup that fails is marked `unknown` and the scan continues — one flaky
 request never sinks the whole report.
+
+### Concurrency and retries
+
+The directory drops connections when too many requests land at once. Measured
+on a 15-package project, raising `--concurrency` to 20 caused 7 of 15 lookups
+to fail outright — a "faster" scan that quietly verifies less.
+
+Each lookup is therefore retried twice with a short backoff, which clears those
+failures at every concurrency level tested. Raising `--concurrency` well above
+the default of 5 still buys little, since the bottleneck is the API rather than
+the client.
+
+### Expo projects
+
+An Expo project counts as React Native even when it doesn't depend on
+`react-native` directly, so it won't trigger the "not a React Native project"
+warning. The report header shows whichever of the two versions it finds.
 
 ## Development
 

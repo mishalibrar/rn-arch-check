@@ -6,7 +6,7 @@ import { Command } from 'commander';
 import ora from 'ora';
 
 import { DEFAULT_CONCURRENCY, checkDependencies } from '../lib/checker.js';
-import { buildJson, hasIncompatible, printReport } from '../lib/report.js';
+import { allLookupsFailed, buildJson, hasIncompatible, printReport } from '../lib/report.js';
 import { ScanError, scanProject } from '../lib/scanner.js';
 
 const require = createRequire(import.meta.url);
@@ -47,10 +47,10 @@ function warn(message) {
 async function main(options) {
   const project = await scanProject(options.path ?? process.cwd());
 
-  if (!project.rnVersion) {
+  if (!project.isReactNative) {
     warn(
       chalk.yellow(
-        `Warning: ${project.manifestPath} does not list react-native as a dependency.\n` +
+        `Warning: ${project.manifestPath} does not list react-native or expo as a dependency.\n` +
           'Scanning anyway.',
       ),
     );
@@ -84,12 +84,18 @@ async function main(options) {
     printReport({
       projectName: project.projectName,
       rnVersion: project.rnVersion,
+      expoVersion: project.expoVersion,
       results,
       skipped: project.skipped,
     });
   }
 
-  if (hasIncompatible(results)) process.exitCode = EXIT_INCOMPATIBLE;
+  // A run where nothing could be reached must not look like a clean pass.
+  if (allLookupsFailed(results)) {
+    process.exitCode = EXIT_ERROR;
+  } else if (hasIncompatible(results)) {
+    process.exitCode = EXIT_INCOMPATIBLE;
+  }
 }
 
 try {
