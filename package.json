@@ -1,0 +1,38 @@
+{
+  "name": "rn-arch-check",
+  "version": "0.1.0",
+  "description": "Scan a React Native project's dependencies and report New Architecture (Fabric, TurboModules, JSI) compatibility",
+  "type": "module",
+  "bin": {
+    "rn-arch-check": "bin/cli.js"
+  },
+  "main": "lib/scanner.js",
+  "files": [
+    "bin",
+    "lib",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18.17"
+  },
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [
+    "react-native",
+    "new-architecture",
+    "fabric",
+    "turbomodules",
+    "jsi",
+    "expo",
+    "cli",
+    "dependencies"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^5.3.0",
+    "commander": "^12.1.0",
+    "ora": "^8.1.0"
+  }
+}

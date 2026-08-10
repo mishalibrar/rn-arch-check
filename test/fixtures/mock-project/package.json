@@ -1,0 +1,21 @@
+{
+  "name": "mock-rn-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "18.3.1",
+    "react-native": "0.76.0",
+    "react-native-screens": "^4.0.0",
+    "react-native-gesture-handler": "^2.20.0",
+    "react-native-track-player": "^4.1.1",
+    "@react-native-community/checkbox": "^0.5.17",
+    "totally-not-a-real-package-xyz": "^9.9.9",
+    "lodash": "^4.17.21",
+    "zustand": "^5.0.0",
+    "dayjs": "^1.11.13"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "@types/react": "^18.3.0"
+  }
+}
