@@ -97,6 +97,7 @@ test('a transient failure is retried and can then succeed', async () => {
   const result = await checkPackage(
     { name: 'flaky', version: '^1.0.0' },
     {
+      checkDeprecation: false,
       retryDelayMs: 1,
       fetchImpl: async (url) => {
         attempts++;
@@ -122,6 +123,7 @@ test('retries are bounded, and exhaustion yields unknown', async () => {
   const result = await checkPackage(
     { name: 'always-down', version: '^1.0.0' },
     {
+      checkDeprecation: false,
       retries: 2,
       retryDelayMs: 1,
       fetchImpl: async () => {
@@ -140,6 +142,7 @@ test('a 404-style response is not retried', async () => {
   await checkPackage(
     { name: 'gone', version: '^1.0.0' },
     {
+      checkDeprecation: false,
       retries: 3,
       retryDelayMs: 1,
       fetchImpl: async () => {
@@ -157,6 +160,7 @@ test('a 429 is retried', async () => {
   await checkPackage(
     { name: 'busy', version: '^1.0.0' },
     {
+      checkDeprecation: false,
       retries: 2,
       retryDelayMs: 1,
       fetchImpl: async () => {

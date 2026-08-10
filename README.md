@@ -13,14 +13,38 @@ which ones, before you migrate, not after your build breaks.
 
 ## Install
 
+**Installing is optional, and usually not what you want.** Run it directly:
+
+```bash
+npx rn-arch-check
+```
+
+This is the recommended way. `npm install rn-arch-check` asks npm to re-resolve
+your project's entire dependency tree, so it fails on any *pre-existing* peer
+dependency conflict in your app — an error that looks like it came from this
+tool but has nothing to do with it:
+
+```
+npm error ERESOLVE could not resolve
+npm error Conflicting peer dependency: @react-native-masked-view/masked-view@0.2.9
+```
+
+`npx` sidesteps that entirely: it fetches the CLI into a temporary location
+instead of merging it into your tree. The tool only ever *reads* your
+`package.json`, so it never needs to be a dependency of your project.
+
+If you do want it installed, prefer a global install, which is also isolated
+from your project's tree:
+
 ```bash
 npm install -g rn-arch-check
 ```
 
-Or run without installing:
+Adding it as a devDependency works too, but inherits the resolution problem
+above and is only worth it if you want a committed `package.json` script:
 
 ```bash
-npx rn-arch-check
+npm install --save-dev rn-arch-check --legacy-peer-deps
 ```
 
 Requires Node 18.17 or newer.
@@ -90,6 +114,26 @@ as `unmaintained`, or as requiring the New Architecture, are annotated in place.
 A package marked `New Arch only` is compatible, but *requires* the New
 Architecture — it won't work if you stay on the old one.
 
+### Deprecation
+
+The directory records New Architecture support but knows nothing about
+deprecation, so a package can read `Compatible` while npm is actively telling
+you to move off it. Every package is therefore also checked against the npm
+registry, and any deprecation notice is printed verbatim — it usually names the
+successor:
+
+```
+✔  react-native-gifted-chat  Compatible  (deprecated, unmaintained)
+
+Deprecated on npm (1 package):
+  react-native-gifted-chat
+    Maintenance mode - development moved to @kesha-antonov/react-native-chat
+```
+
+Deprecation does not affect the exit code: it's a maintenance signal, not a
+compatibility one. The npm lookup is best-effort and never fails a scan — if
+the registry is unreachable, the compatibility results still stand.
+
 ## Exit codes
 
 | Code | Meaning |
@@ -140,13 +184,19 @@ spinner and any warnings go to stderr, so stdout stays parseable.
 1. **Scan** — reads `dependencies` and `devDependencies` from your
    `package.json`. Both are checked: a native module in `devDependencies` still
    ends up in the build.
-2. **Filter** — pure-JavaScript packages (`lodash`, `dayjs`, `zustand`,
-   `typescript`, `@types/*`, `@babel/*`, …) are skipped, since the New
-   Architecture can't affect a package with no native code. This keeps the
-   report focused and cuts the number of requests.
+2. **Filter** — packages with no native code are skipped, since the New
+   Architecture can't affect them. That covers pure-JavaScript libraries
+   (`lodash`, `dayjs`, `zustand`, `d3-*`, `socket.io-client`), tooling
+   (`typescript`, `@types/*`, `@babel/*`, `patch-package`), and React Native's
+   own framework packages (`@react-native/*`, `@react-native-community/cli*`),
+   which are versioned with the framework rather than tracked individually.
+   Real native modules under `@react-native-community/` — `netinfo`,
+   `datetimepicker` and friends — are still checked.
 3. **Check** — each remaining package is looked up against
    `https://reactnative.directory/api/libraries?search=NAME`, at most
-   `--concurrency` at a time.
+   `--concurrency` at a time, alongside a small npm registry lookup for
+   deprecation. The two run in parallel against different hosts, so the load on
+   the directory stays within the concurrency cap.
 4. **Report** — results are grouped by severity and printed.
 
 ### A note on the directory API

@@ -1,6 +1,6 @@
 {
   "name": "rn-arch-check",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Scan a React Native project's dependencies and report New Architecture (Fabric, TurboModules, JSI) compatibility",
   "type": "module",
   "bin": {

@@ -47,6 +47,61 @@ test('filters pure-JS packages out of the checklist', async () => {
   }
 });
 
+test('skips framework tooling, install-time tooling and itself', async () => {
+  const noise = [
+    'rn-arch-check',
+    '@react-native/babel-preset',
+    '@react-native/metro-config',
+    '@react-native/virtualized-lists',
+    '@react-native-community/cli',
+    '@react-native-community/cli-platform-android',
+    'd3-shape',
+    'socket.io-client',
+    'react-moment',
+    'patch-package',
+    'postinstall-postinstall',
+  ];
+  const dir = await tempProject({
+    name: 'noisy',
+    dependencies: Object.fromEntries([
+      ['react-native', '0.77.0'],
+      ['react-native-screens', '^4.0.0'],
+      ...noise.map((n) => [n, '^1.0.0']),
+    ]),
+  });
+
+  const project = await scanProject(dir);
+
+  assert.deepEqual(
+    project.dependencies.map((d) => d.name),
+    ['react-native-screens'],
+    'only the real native module should be checked',
+  );
+  for (const name of noise) {
+    assert.ok(project.skipped.some((d) => d.name === name), `${name} should be skipped`);
+  }
+});
+
+test('real @react-native-community native modules are still checked', async () => {
+  // The CLI packages are skipped, but netinfo and friends must not be.
+  const dir = await tempProject({
+    name: 'community',
+    dependencies: {
+      'react-native': '0.77.0',
+      '@react-native-community/netinfo': '^11.0.0',
+      '@react-native-community/datetimepicker': '^8.0.0',
+      '@react-native-community/cli': '^20.0.0',
+    },
+  });
+
+  const project = await scanProject(dir);
+
+  assert.deepEqual(
+    project.dependencies.map((d) => d.name),
+    ['@react-native-community/datetimepicker', '@react-native-community/netinfo'],
+  );
+});
+
 test('scans devDependencies too — a native module there still ships', async () => {
   const dir = await tempProject({
     name: 'dev-deps',

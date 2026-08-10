@@ -154,18 +154,25 @@ test('one broken package does not stop the others', async () => {
   );
 });
 
-test('never exceeds the concurrency cap, and keeps input order', async () => {
+test('never exceeds the concurrency cap against the directory, and keeps input order', async () => {
   const deps = Array.from({ length: 20 }, (_, i) => dep(`pkg-${i}`));
-  let inFlight = 0;
-  let peak = 0;
+  // Each package also queries npm, on a different host. What must stay capped
+  // is the load on the directory, which is the API that drops connections.
+  const inFlight = { directory: 0, npm: 0 };
+  const peak = { directory: 0, npm: 0 };
 
   const results = await checkDependencies(deps, {
     concurrency: 5,
     fetchImpl: async (url) => {
-      inFlight++;
-      peak = Math.max(peak, inFlight);
+      const host = typeof url === 'string' ? 'npm' : 'directory';
+      inFlight[host]++;
+      peak[host] = Math.max(peak[host], inFlight[host]);
       await new Promise((resolve) => setTimeout(resolve, 5));
-      inFlight--;
+      inFlight[host]--;
+
+      if (host === 'npm') {
+        return { ok: true, status: 200, statusText: 'OK', json: async () => ({ version: '1.0.0' }) };
+      }
       return {
         ok: true,
         status: 200,
@@ -177,7 +184,8 @@ test('never exceeds the concurrency cap, and keeps input order', async () => {
     },
   });
 
-  assert.equal(peak, 5, `expected peak concurrency of 5, saw ${peak}`);
+  assert.equal(peak.directory, 5, `expected 5 concurrent directory requests, saw ${peak.directory}`);
+  assert.ok(peak.npm <= 5, `npm requests should also stay within the cap, saw ${peak.npm}`);
   assert.deepEqual(
     results.map((r) => r.name),
     deps.map((d) => d.name),

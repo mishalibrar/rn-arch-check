@@ -124,6 +124,7 @@ test('builds the documented JSON shape', () => {
     status: 'incompatible',
     newArchOnly: false,
     unmaintained: true,
+    deprecated: null,
     url: 'https://reactnative.directory/?search=zzz-broken',
   });
 
