@@ -1,7 +1,7 @@
 {
   "name": "rn-arch-check",
-  "version": "0.1.1",
-  "description": "Scan a React Native project's dependencies and report New Architecture (Fabric, TurboModules, JSI) compatibility",
+  "version": "0.1.2",
+  "description": "Check which React Native dependencies support the New Architecture (Fabric, TurboModules, JSI) before you migrate. Zero-config CLI, CI-ready.",
   "type": "module",
   "bin": {
     "rn-arch-check": "bin/cli.js"
@@ -31,12 +31,28 @@
   "keywords": [
     "react-native",
     "new-architecture",
+    "new-arch",
+    "newarchenabled",
     "fabric",
     "turbomodules",
+    "turbomodule",
     "jsi",
+    "bridgeless",
+    "compatibility",
+    "compatibility-checker",
+    "dependency-checker",
+    "react-native-directory",
+    "migration",
+    "upgrade",
     "expo",
+    "expo-sdk-52",
+    "react-native-0-76",
     "cli",
-    "dependencies"
+    "devtools",
+    "audit",
+    "ci",
+    "android",
+    "ios"
   ],
   "author": "mishalibrar <mishalibrar12@gmail.com>",
   "license": "MIT",

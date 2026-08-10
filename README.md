@@ -1,15 +1,34 @@
-# rn-arch-check
+# rn-arch-check — check React Native New Architecture compatibility
 
 [![CI](https://github.com/mishalibrar/rn-arch-check/actions/workflows/ci.yml/badge.svg)](https://github.com/mishalibrar/rn-arch-check/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/rn-arch-check)](https://www.npmjs.com/package/rn-arch-check)
+[![npm version](https://img.shields.io/npm/v/rn-arch-check)](https://www.npmjs.com/package/rn-arch-check)
+[![node](https://img.shields.io/node/v/rn-arch-check)](https://www.npmjs.com/package/rn-arch-check)
+[![license](https://img.shields.io/npm/l/rn-arch-check)](./LICENSE)
 
-Scan a React Native project's dependencies and report which ones are compatible
-with the New Architecture (Fabric, TurboModules, JSI), using
-[React Native Directory](https://reactnative.directory) as the data source.
+**Find out which of your React Native dependencies support the New Architecture
+— Fabric, TurboModules and JSI — before you migrate, not after your build
+breaks.**
 
-New Architecture is the default as of RN 0.76+ and Expo SDK 52+, but a lot of
-third-party packages still haven't confirmed support. This tells you exactly
-which ones, before you migrate, not after your build breaks.
+```bash
+npx rn-arch-check
+```
+
+Every migration guide gives the same advice: open
+[React Native Directory](https://reactnative.directory) and cross-reference it
+against your `package.json` by hand. This does that for you in about two
+seconds, for every dependency at once, and exits non-zero when something is
+confirmed incompatible so it can gate CI.
+
+The New Architecture is the default from React Native 0.76 and Expo SDK 52
+onward, and the old architecture is on its way out — but plenty of third-party
+packages still have no confirmed support. This tells you exactly which ones.
+
+- **Zero config** — reads your `package.json`, no setup
+- **Nothing to install** — runs straight from `npx`
+- **CI-ready** — exit code `1` on a confirmed incompatibility
+- **Deprecation-aware** — flags packages npm has deprecated, not just
+  incompatible ones
+- **Expo and bare React Native** — both supported
 
 ## Install
 
@@ -170,6 +189,7 @@ rn-arch-check --json
       "status": "incompatible",
       "newArchOnly": false,
       "unmaintained": false,
+      "deprecated": null,
       "url": "https://reactnative.directory/?search=react-native-track-player"
     }
   ]
@@ -229,6 +249,65 @@ the client.
 An Expo project counts as React Native even when it doesn't depend on
 `react-native` directly, so it won't trigger the "not a React Native project"
 warning. The report header shows whichever of the two versions it finds.
+
+## Which versions is this for?
+
+| Setup | New Architecture status |
+|---|---|
+| React Native 0.76+ | On by default (bridgeless) |
+| React Native 0.68 – 0.75 | Opt-in via `newArchEnabled` |
+| Expo SDK 52+ | On by default in new projects |
+| Expo SDK 51 and earlier | Opt-in |
+
+If you're on React Native 0.76 or newer, or Expo SDK 52 or newer, you are
+already running the New Architecture — so any dependency without support is a
+live problem rather than a future one.
+
+## FAQ
+
+### How do I know if a React Native library supports the New Architecture?
+
+React Native Directory records it per package. Checking by hand means searching
+each dependency individually; `npx rn-arch-check` reads your `package.json` and
+checks all of them at once.
+
+### The interop layer exists — do I still need to care?
+
+Yes, for some packages. Since React Native 0.74 the interop layers let many
+old-architecture libraries run unchanged, which covers a lot of cases. It isn't
+complete: libraries that ship or wrap third-party native code are the ones that
+tend to break, and those are exactly what this flags.
+
+### What does "Unverified" mean — is the package broken?
+
+No. It means React Native Directory has no record either way, usually because
+nobody has updated the entry. Treat it as "test this yourself", not "this is
+broken". Check the package's release activity: an actively released library with
+no directory entry is far lower risk than one abandoned three years ago.
+
+### Does it work with Expo?
+
+Yes. An Expo project counts as React Native even when it doesn't depend on
+`react-native` directly, and the report shows your Expo SDK version.
+
+### Can I use it in CI to block a migration?
+
+That's the intended use. It exits `1` when a dependency is confirmed
+incompatible, so `npx rn-arch-check` gates a pipeline with no extra
+configuration. A run where every lookup failed exits `2`, so an offline runner
+can't report a false pass.
+
+### Does it modify my project?
+
+No. It only reads `package.json`. It never installs, writes or changes
+anything.
+
+### Why is a package I depend on listed as "Unlisted"?
+
+React Native Directory doesn't track everything. Pure-JavaScript packages and
+React Native's own framework packages are filtered out before the check, so
+anything still showing as unlisted is usually a native module with no directory
+entry — worth verifying by hand.
 
 ## Development
 
