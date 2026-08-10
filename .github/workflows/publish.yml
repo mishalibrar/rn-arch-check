@@ -22,6 +22,19 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Checked before anything expensive runs: without this the job does a
+      # full install and test pass, then dies at the last step with npm's
+      # "ENEEDAUTH", which does not name the missing secret.
+      - name: Check the npm token is configured
+        run: |
+          if [ -z "${{ secrets.NPM_TOKEN }}" ]; then
+            echo "::error::NPM_TOKEN secret is not set. Create an Automation token at" \
+                 "npmjs.com (Access Tokens -> Generate New Token -> Classic -> Automation)," \
+                 "then add it under Settings -> Secrets and variables -> Actions as NPM_TOKEN."
+            exit 1
+          fi
+          echo "NPM_TOKEN is present"
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
