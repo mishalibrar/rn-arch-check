@@ -26,6 +26,12 @@ The New Architecture is the default from React Native 0.76 and Expo SDK 52
 onward, and the old architecture is on its way out — but plenty of third-party
 packages still have no confirmed support. This tells you exactly which ones.
 
+Pointed at a production app with 93 dependencies, it checked the 64 native ones
+in about two seconds and found a single confirmed incompatibility — plus seven
+packages reporting `Compatible` that had been abandoned for two to five years,
+and one that npm had formally deprecated. [What a real scan turns
+up](#what-a-real-scan-turns-up) has the full breakdown.
+
 - **Zero config** — reads your `package.json`, no setup
 - **Nothing to install** — runs straight from `npx`
 - **CI-ready** — exit code `1` on a confirmed incompatibility
@@ -270,7 +276,21 @@ An Expo project counts as React Native even when it doesn't depend on
 `react-native` directly, so it won't trigger the "not a React Native project"
 warning. The report header shows whichever of the two versions it finds.
 
-## Which versions is this for?
+## What is the React Native New Architecture?
+
+The New Architecture is React Native's rewrite of the layer between JavaScript
+and native code. It replaces the asynchronous JSON bridge with three pieces:
+**JSI**, which lets JavaScript hold direct references to native objects;
+**TurboModules**, native modules loaded lazily and called synchronously through
+JSI; and **Fabric**, the re-implemented rendering system. *Bridgeless* mode,
+default since React Native 0.76, removes the old bridge entirely.
+
+It matters for dependencies because any package shipping native code was written
+against one of the two systems. A library that only registers an old-style
+native module can fail to load, render nothing, or crash at runtime once the
+bridge is gone — which is what this tool checks for, package by package.
+
+### Which versions is this for?
 
 | Setup | New Architecture status |
 |---|---|
@@ -323,6 +343,17 @@ React Native Directory records it per package. Checking by hand means searching
 each dependency individually; `npx rn-arch-check` reads your `package.json` and
 checks all of them at once.
 
+### What happens if a dependency doesn't support the New Architecture?
+
+It depends on what the package does. Since React Native 0.74 the interop layers
+translate many old-architecture modules and view managers automatically, so a
+good number of libraries keep working untouched. The ones that don't tend to
+fail loudly rather than subtly: the native module never registers and calls into
+it return `undefined`, a native view renders as an empty box, or the app crashes
+on the first call. Because it's a native-side failure, it won't show up until
+you build and run — which is the reason to check the list before you migrate
+rather than after.
+
 ### The interop layer exists — do I still need to care?
 
 Yes, for some packages. Since React Native 0.74 the interop layers let many
@@ -341,6 +372,32 @@ no directory entry is far lower risk than one abandoned three years ago.
 
 Yes. An Expo project counts as React Native even when it doesn't depend on
 `react-native` directly, and the report shows your Expo SDK version.
+
+### How is this different from expo-doctor?
+
+`expo-doctor` runs a React Native Directory check as one part of a wider project
+validation, and on an Expo project it already covers this. This is a standalone
+CLI for bare React Native projects, and for when you want a check that fails CI
+on a confirmed incompatibility and nothing else. See [How it
+compares](#how-it-compares) for the full table.
+
+### Does it check transitive dependencies?
+
+No. It reads the `dependencies` and `devDependencies` declared in your
+`package.json` — the packages you chose — and does not walk the lockfile. A
+native module pulled in only as someone else's transitive dependency won't
+appear in the report. In practice that's rarely where migration risk lives:
+native modules are almost always direct dependencies, because you have to link
+and configure them yourself.
+
+### How do I turn the New Architecture on or off?
+
+On React Native 0.76 and newer it's on by default; set `newArchEnabled=false` in
+`android/gradle.properties` and `RCT_NEW_ARCH_ENABLED=0` for iOS to opt back
+out, while that remains supported. On 0.68–0.75 the same flags opt you in. Expo
+projects set `newArchEnabled` through the `expo-build-properties` plugin. This
+tool doesn't change any of those — it only tells you whether your dependencies
+are ready before you flip them.
 
 ### Can I use it in CI to block a migration?
 
@@ -382,3 +439,9 @@ directory API, so the suite needs no network access.
 ## License
 
 MIT
+
+---
+
+Maintained by [mishalibrar](https://github.com/mishalibrar). Compatibility data
+comes from [React Native Directory](https://reactnative.directory); deprecation
+notices come from the npm registry. Documentation last reviewed August 2026.
